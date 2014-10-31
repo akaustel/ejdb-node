@@ -29,6 +29,8 @@
 .workspace
 .dep.inc
 /ejdbdll
+/win32/tcejdb-1.1.25-mingw32-i686.dll
+/win32/tcejdb-1.1.25-mingw32-x86_64.dll
 /node_modules
 /configure.gypi
 /ejdb/misc
