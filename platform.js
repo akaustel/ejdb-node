@@ -2,6 +2,7 @@ var cmd = process.argv[2];
 var exec = require("child_process").exec;
 var spawn = require("child_process").spawn;
 var fs = require("fs");
+var zlib = require('zlib');
 var path = require("path");
 var http = require("http");
 var util = require("util");
@@ -120,30 +121,39 @@ function win() {
             }
 
             function processArchive() {
-                var AdmZip = require("adm-zip");
+                //var AdmZip = require("adm-zip");
                 console.log("Unzip archive '%s'", zfile);
-                var azip = new AdmZip(zfile);
-                azip.extractAllTo(sdir, true);
+                //var azip = new AdmZip(zfile);
+                //azip.extractAllTo(sdir, true);
+                
                 sdir = path.resolve(sdir);
+                
 
-                var config = {};
-                config["variables"] = {
-                    "EJDB_HOME" : sdir
-                };
-                fs.writeFileSync("configure.gypi", JSON.stringify(config));
+                var inp = fs.createReadStream('./win32/tcejdb-1.1.25-mingw32-i686.dll.gz');
+                var out = fs.createWriteStream('./tcejdbdll.dll');
 
-                var args = ["configure", "rebuild"];
-                console.log("node-gyp %j", args);
-                var ng = spawn("node-gyp.cmd", args, {stdio : "inherit"});
-                ng.on("error", function(ev) {
-                    console.log("Spawn error: " + ev);
-                    process.exit(1);
+                inp.pipe(zlib.createGunzip()).pipe(out).on('close', function() {
+                    console.log("gunzip done!");
+
+                    var config = {};
+                    config["variables"] = {
+                        "EJDB_HOME" : sdir
+                    };
+                    fs.writeFileSync("configure.gypi", JSON.stringify(config));
+
+                    var args = ["configure", "rebuild"];
+                    console.log("node-gyp %j", args);
+                    var ng = spawn("node-gyp.cmd", args, {stdio : "inherit"});
+                    ng.on("error", function(ev) {
+                        console.log("Spawn error: " + ev);
+                        process.exit(1);
+                    });
+                    ng.on("close", exithandler("node-gyp", function() {
+                        copyFile(path.join(sdir, "tcejdbdll.dll"),
+                                "build/Release/tcejdbdll.dll",
+                                exithandler("copy tcejdbdll.dll"));
+                    }));
                 });
-                ng.on("close", exithandler("node-gyp", function() {
-                    copyFile(path.join(sdir, "lib/tcejdbdll.dll"),
-                            "build/Release/tcejdbdll.dll",
-                            exithandler("copy tcejdbdll.dll"));
-                }));
             }
         }
     }

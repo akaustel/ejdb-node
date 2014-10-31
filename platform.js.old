@@ -2,7 +2,6 @@ var cmd = process.argv[2];
 var exec = require("child_process").exec;
 var spawn = require("child_process").spawn;
 var fs = require("fs");
-var zlib = require('zlib');
 var path = require("path");
 var http = require("http");
 var util = require("util");
@@ -121,21 +120,11 @@ function win() {
             }
 
             function processArchive() {
-                //var AdmZip = require("adm-zip");
+                var AdmZip = require("adm-zip");
                 console.log("Unzip archive '%s'", zfile);
-                //var azip = new AdmZip(zfile);
-                //azip.extractAllTo(sdir, true);
-                
+                var azip = new AdmZip(zfile);
+                azip.extractAllTo(sdir, true);
                 sdir = path.resolve(sdir);
-                
-				var inp = fs.createReadStream(zfile);
-				var out = fs.createWriteStream('tcejdbdll.dll');
-				
-				inp.pipe(zlib.createUnzip()).pipe(out).on('end', function() {
-				    console.log("we're done!");
-				});
-				
-				
 
                 var config = {};
                 config["variables"] = {
@@ -151,7 +140,7 @@ function win() {
                     process.exit(1);
                 });
                 ng.on("close", exithandler("node-gyp", function() {
-                    copyFile(path.join(sdir, "tcejdbdll.dll"),
+                    copyFile(path.join(sdir, "lib/tcejdbdll.dll"),
                             "build/Release/tcejdbdll.dll",
                             exithandler("copy tcejdbdll.dll"));
                 }));
